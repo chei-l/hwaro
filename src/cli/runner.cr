@@ -96,7 +96,7 @@ module Hwaro
         else
           # Try to get command from registry
           if command = CommandRegistry.get(command_name)
-            command.as(Command).run(args)
+            command.run(args)
           else
             Logger.error "Unknown command: #{command_name}"
             print_help

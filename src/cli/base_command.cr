@@ -81,6 +81,12 @@ module Hwaro
         setup_flags(parser, opts)
         @flags_loaded = true
       end
+
+      macro inherited
+        def run(args : Array(String)) : Nil
+          super(args)
+        end
+      end
     end
   end
 end
