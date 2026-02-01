@@ -5,7 +5,7 @@ module Hwaro
     abstract class Command
       abstract def name : String
       abstract def description : String
-      abstract def run(args : Array(String))
+      abstract def run(args : Array(String)) : Nil
 
       # For completion
       def flags : Array(FlagInfo)

@@ -18,7 +18,7 @@ module Hwaro
       def initialize(@name, @description, @proc : Proc(Array(String), Nil))
       end
 
-      def run(args)
+      def run(args : Array(String)) : Nil
         @proc.call(args)
       end
     end

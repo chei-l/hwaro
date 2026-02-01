@@ -19,7 +19,7 @@ module Hwaro
         @stored_flags
       end
 
-      def run(args : Array(String))
+      def run(args : Array(String)) : Nil
         options = default_options
         parser = OptionParser.new
         parser.banner = banner
@@ -28,6 +28,7 @@ module Hwaro
 
         parser.parse(args)
         execute(options, parser.unknown_args)
+        nil
       rescue ex : OptionParser::InvalidOption
         Logger.error "Error: #{ex.message}"
         exit(1)
