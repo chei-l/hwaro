@@ -1,4 +1,4 @@
-require "option_parser"
+require "../../cli/base_command"
 require "../../config/options/build_options"
 require "../../core/build/builder"
 require "../../content/hooks"
@@ -7,9 +7,34 @@ require "../../utils/logger"
 module Hwaro
   module CLI
     module Commands
-      class BuildCommand
-        def run(args : Array(String))
-          options = parse_options(args)
+      class BuildCommand < BaseCommand(Config::Options::BuildOptions)
+        def name : String
+          "build"
+        end
+
+        def description : String
+          "Build the project"
+        end
+
+        def default_options : Config::Options::BuildOptions
+          Config::Options::BuildOptions.new
+        end
+
+        def setup_flags(parser : OptionParser, options : Config::Options::BuildOptions)
+          parser.banner = "Usage: hwaro build [options]"
+
+          flag(parser, "-o DIR", "--output-dir DIR", "Output directory (default: public)") { |dir| options.output_dir = dir }
+          flag(parser, nil, "--base-url URL", "Override base_url from config.toml") { |url| options.base_url = url }
+          flag(parser, "-d", "--drafts", "Include draft content") { options.drafts = true }
+          flag(parser, nil, "--minify", "Minify HTML output (and minified json, xml)") { options.minify = true }
+          flag(parser, nil, "--no-parallel", "Disable parallel file processing") { options.parallel = false }
+          flag(parser, nil, "--cache", "Enable build caching (skip unchanged files)") { options.cache = true }
+          flag(parser, nil, "--skip-highlighting", "Disable syntax highlighting") { options.highlight = false }
+          flag(parser, "-v", "--verbose", "Show detailed output including generated files") { options.verbose = true }
+          flag(parser, nil, "--profile", "Show build timing profile for each phase") { options.profile = true }
+        end
+
+        def execute(options : Config::Options::BuildOptions, args : Array(String))
           builder = Core::Build::Builder.new
 
           # Set logger level based on verbose option
@@ -23,44 +48,6 @@ module Hwaro
           end
 
           builder.run(options)
-        end
-
-        private def parse_options(args : Array(String)) : Config::Options::BuildOptions
-          output_dir = "public"
-          base_url = nil.as(String?)
-          drafts = false
-          minify = false
-          parallel = true
-          cache = false
-          highlight = true
-          verbose = false
-          profile = false
-
-          OptionParser.parse(args) do |parser|
-            parser.banner = "Usage: hwaro build [options]"
-            parser.on("-o DIR", "--output-dir DIR", "Output directory (default: public)") { |dir| output_dir = dir }
-            parser.on("--base-url URL", "Override base_url from config.toml") { |url| base_url = url }
-            parser.on("-d", "--drafts", "Include draft content") { drafts = true }
-            parser.on("--minify", "Minify HTML output (and minified json, xml)") { minify = true }
-            parser.on("--no-parallel", "Disable parallel file processing") { parallel = false }
-            parser.on("--cache", "Enable build caching (skip unchanged files)") { cache = true }
-            parser.on("--skip-highlighting", "Disable syntax highlighting") { highlight = false }
-            parser.on("-v", "--verbose", "Show detailed output including generated files") { verbose = true }
-            parser.on("--profile", "Show build timing profile for each phase") { profile = true }
-            parser.on("-h", "--help", "Show this help") { Logger.info parser.to_s; exit }
-          end
-
-          Config::Options::BuildOptions.new(
-            output_dir: output_dir,
-            base_url: base_url,
-            drafts: drafts,
-            minify: minify,
-            parallel: parallel,
-            cache: cache,
-            highlight: highlight,
-            verbose: verbose,
-            profile: profile
-          )
         end
       end
     end

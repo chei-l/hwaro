@@ -1,4 +1,4 @@
-require "option_parser"
+require "../../cli/base_command"
 require "../../config/options/new_options"
 require "../../services/creator"
 require "../../utils/logger"
@@ -6,26 +6,29 @@ require "../../utils/logger"
 module Hwaro
   module CLI
     module Commands
-      class NewCommand
-        def run(args : Array(String))
-          options = parse_options(args)
-          Services::Creator.new.run(options)
+      class NewCommand < BaseCommand(Config::Options::NewOptions)
+        def name : String
+          "new"
         end
 
-        private def parse_options(args : Array(String)) : Config::Options::NewOptions
-          path = nil
-          title = nil
+        def description : String
+          "Create a new content file"
+        end
 
-          OptionParser.parse(args) do |parser|
-            parser.banner = "Usage: hwaro new [path]"
-            parser.on("-t TITLE", "--title=TITLE", "Content title") { |t| title = t }
-            parser.on("-h", "--help", "Show this help") { Logger.info parser.to_s; exit }
-            parser.unknown_args do |unknown|
-              path = unknown.first if unknown.any?
-            end
+        def default_options : Config::Options::NewOptions
+          Config::Options::NewOptions.new
+        end
+
+        def setup_flags(parser : OptionParser, options : Config::Options::NewOptions)
+          parser.banner = "Usage: hwaro new [path]"
+          flag(parser, "-t TITLE", "--title=TITLE", "Content title") { |t| options.title = t }
+        end
+
+        def execute(options : Config::Options::NewOptions, args : Array(String))
+          if args.any?
+            options.path = args.first
           end
-
-          Config::Options::NewOptions.new(path: path, title: title)
+          Services::Creator.new.run(options)
         end
       end
     end

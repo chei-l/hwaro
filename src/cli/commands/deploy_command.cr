@@ -1,4 +1,4 @@
-require "option_parser"
+require "../../cli/base_command"
 require "../../config/options/deploy_options"
 require "../../models/config"
 require "../../services/deployer"
@@ -7,50 +7,44 @@ require "../../utils/logger"
 module Hwaro
   module CLI
     module Commands
-      class DeployCommand
-        def run(args : Array(String))
-          options, list_targets = parse_options(args)
-          if list_targets
+      class DeployCommand < BaseCommand(Config::Options::DeployOptions)
+        @list_targets = false
+
+        def name : String
+          "deploy"
+        end
+
+        def description : String
+          "Deploy the built site using config.toml"
+        end
+
+        def default_options : Config::Options::DeployOptions
+          @list_targets = false
+          Config::Options::DeployOptions.new
+        end
+
+        def setup_flags(parser : OptionParser, options : Config::Options::DeployOptions)
+          parser.banner = "Usage: hwaro deploy [options] [target ...]"
+
+          flag(parser, "-s DIR", "--source DIR", "Source directory to deploy (default: deployment.source_dir or public)") { |dir| options.source_dir = dir }
+          flag(parser, nil, "--dry-run", "Show planned changes without writing") { options.dry_run = true }
+          flag(parser, nil, "--confirm", "Ask for confirmation before deploying") { options.confirm = true }
+          flag(parser, nil, "--force", "Force upload/copy (ignore file comparisons)") { options.force = true }
+          flag(parser, nil, "--max-deletes N", "Maximum number of deletes (default: deployment.maxDeletes or 256, -1 disables)") { |n| options.max_deletes = n.to_i }
+          flag(parser, nil, "--list-targets", "List configured deployment targets and exit") { @list_targets = true }
+        end
+
+        def execute(options : Config::Options::DeployOptions, args : Array(String))
+          if @list_targets
             print_targets
             return
           end
 
+          # Handle args as targets
+          options.targets = args
+
           ok = Services::Deployer.new.run(options)
           exit(1) unless ok
-        end
-
-        private def parse_options(args : Array(String)) : {Config::Options::DeployOptions, Bool}
-          source_dir = nil.as(String?)
-          dry_run = nil.as(Bool?)
-          confirm = nil.as(Bool?)
-          force = nil.as(Bool?)
-          max_deletes = nil.as(Int32?)
-          list_targets = false
-
-          OptionParser.parse(args) do |parser|
-            parser.banner = "Usage: hwaro deploy [options] [target ...]"
-            parser.on("-s DIR", "--source DIR", "Source directory to deploy (default: deployment.source_dir or public)") { |dir| source_dir = dir }
-            parser.on("--dry-run", "Show planned changes without writing") { dry_run = true }
-            parser.on("--confirm", "Ask for confirmation before deploying") { confirm = true }
-            parser.on("--force", "Force upload/copy (ignore file comparisons)") { force = true }
-            parser.on("--max-deletes N", "Maximum number of deletes (default: deployment.maxDeletes or 256, -1 disables)") { |n| max_deletes = n.to_i }
-            parser.on("--list-targets", "List configured deployment targets and exit") { list_targets = true }
-            parser.on("-h", "--help", "Show this help") { Logger.info parser.to_s; exit }
-          end
-
-          targets = args.dup
-
-          {
-            Config::Options::DeployOptions.new(
-              source_dir: source_dir,
-              targets: targets,
-              dry_run: dry_run,
-              confirm: confirm,
-              force: force,
-              max_deletes: max_deletes,
-            ),
-            list_targets,
-          }
         end
 
         private def print_targets

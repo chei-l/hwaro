@@ -1,13 +1,5 @@
-# Tool command - Parent command for various utility tools
-#
-# This command serves as a container for utility subcommands.
-# Usage:
-#   hwaro tool <subcommand> [options]
-#
-# Available subcommands:
-#   convert  - Convert frontmatter between YAML and TOML formats
-
 require "option_parser"
+require "../../cli/base_command"
 require "./tool/convert_command"
 require "./tool/list_command"
 require "./tool/check_command"
@@ -16,14 +8,43 @@ require "../../utils/logger"
 module Hwaro
   module CLI
     module Commands
-      class ToolCommand
+      struct ToolOptions; end
+
+      class ToolCommand < BaseCommand(ToolOptions)
         SUBCOMMANDS = {
           "convert" => "Convert frontmatter format (YAML <-> TOML)",
           "list"    => "List content files (all, drafts, published)",
           "check"   => "Check for dead links in content files",
         }
 
-        def run(args : Array(String))
+        def name : String
+          "tool"
+        end
+
+        def description : String
+          "Utility tools (convert, etc.)"
+        end
+
+        def default_options : ToolOptions
+          ToolOptions.new
+        end
+
+        def setup_flags(parser : OptionParser, options : ToolOptions)
+          parser.banner = "Usage: hwaro tool <subcommand> [options]"
+        end
+
+        protected def setup_parser(parser : OptionParser, options : ToolOptions)
+          super
+          parser.separator ""
+          parser.separator "Available subcommands:"
+          SUBCOMMANDS.each do |name, desc|
+            parser.separator "  #{name.ljust(10)} #{desc}"
+          end
+          parser.separator ""
+          parser.separator "Run 'hwaro tool <subcommand> --help' for more information on a subcommand."
+        end
+
+        def execute(options : ToolOptions, args : Array(String))
           if args.empty?
             print_help
             exit(1)
