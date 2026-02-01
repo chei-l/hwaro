@@ -1,3 +1,4 @@
+require "./command"
 require "./commands/init_command"
 require "./commands/build_command"
 require "./commands/serve_command"
@@ -6,7 +7,6 @@ require "./commands/deploy_command"
 require "./commands/tool_command"
 require "./commands/completion_command"
 require "../utils/logger"
-require "./command"
 
 module Hwaro
   module CLI
@@ -96,7 +96,7 @@ module Hwaro
         else
           # Try to get command from registry
           if command = CommandRegistry.get(command_name)
-            command.run(args)
+            command.as(Command).run(args)
           else
             Logger.error "Unknown command: #{command_name}"
             print_help
